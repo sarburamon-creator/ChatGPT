@@ -1016,12 +1016,7 @@ Aveti dreptul sa va faceti ce camere text considerati voi OOC, dar in cazul in c
 Este STRICT INTERZIS sa aveti camere VOICE pe acel server de discord.
 In cazul in care Organizatia pe care o detineti face multe probleme prin care
 incalca Regulamentul Server-ului FPLAYT exista mari sanse sa vi se interzica sa mai
-continuati cu acea Organizatie
-
-
-Aici pune textul regulamentului tău.
-Botul va folosi acest text ca referință pentru a răspunde corect.
-`;
+continuati cu acea Organizatie`;
 
 // --- Client Discord ---
 const client = new Client({
