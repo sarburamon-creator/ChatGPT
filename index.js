@@ -3,6 +3,11 @@ import axios from "axios";
 import pdfParse from "pdf-parse";
 import Tesseract from "tesseract.js";
 import fs from "fs-extra";
+import dotenv from "dotenv";
+import { OpenAI } from "openai";
+
+dotenv.config();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const client = new Client({
   intents: [
@@ -36,25 +41,34 @@ async function analyzeImage(url) {
   return result.data.text;
 }
 
-// Funcție pentru căutare în regulament
-function searchRegulament(query) {
+// Funcție AI pentru răspunsuri inteligente
+async function askOpenAI(question) {
   if (!REGULAMENT_TEXT) return "❌ Regulamentul nu este încărcat.";
-  if (REGULAMENT_TEXT.toLowerCase().includes(query.toLowerCase())) {
-    return "✅ Am găsit în regulament:\n" + query;
-  } else {
-    return "❌ Nu am găsit răspunsul exact.";
-  }
+
+  const prompt = `
+Ai următorul regulament:\n${REGULAMENT_TEXT}\n
+Întrebare: ${question}
+Răspunde clar, concis și corect pe baza regulamentului. Dacă nu găsești răspunsul, spune sincer.
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.2
+  });
+
+  return completion.choices[0].message.content;
 }
 
 // Înregistrare slash command
 const commands = [
   new SlashCommandBuilder()
     .setName("openchatgpt")
-    .setDescription("Analizează PDF/imagini și răspunde la întrebări din regulament")
+    .setDescription("Răspunde la întrebări din regulament")
     .addStringOption(option =>
       option.setName("intrebare")
         .setDescription("Întrebarea ta legată de regulament")
-        .setRequired(false)
+        .setRequired(true)
     )
 ].map(command => command.toJSON());
 
@@ -84,13 +98,8 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "openchatgpt") {
     const question = interaction.options.getString("intrebare");
-
-    if (question) {
-      const answer = searchRegulament(question);
-      await interaction.reply(answer);
-    } else {
-      await interaction.reply("ℹ️ Trimite un PDF sau o imagine ca attachment, apoi folosește /openchatgpt cu întrebarea ta.");
-    }
+    const answer = await askOpenAI(question);
+    await interaction.reply(answer);
   }
 });
 
@@ -107,11 +116,11 @@ client.on("messageCreate", async (message) => {
         const text = await analyzeImage(attachment.url);
         message.reply("📄 Text extras din imagine:\n" + text);
 
-        const answer = searchRegulament(text.trim());
+        const answer = await askOpenAI(text.trim());
         message.reply(answer);
       }
     }
   }
 });
 
-client.login(process.env.TOKEN);
+client.login(process.env.DISCORD_TOKEN);
