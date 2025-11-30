@@ -60,10 +60,10 @@ Răspunde clar, concis și corect pe baza regulamentului. Dacă nu găsești ră
   return completion.choices[0].message.content;
 }
 
-// Înregistrare slash command
+// Înregistrare slash command pe server
 const commands = [
   new SlashCommandBuilder()
-    .setName("openchatgpt")
+    .setName("narcischatgpt")
     .setDescription("Răspunde la întrebări din regulament")
     .addStringOption(option =>
       option.setName("intrebare")
@@ -72,18 +72,18 @@ const commands = [
     )
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
   try {
-    console.log("🔄 Înregistrare comenzi slash...");
+    console.log("🔄 Înregistrare comenzi slash pe server...");
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands }
     );
-    console.log("✅ Comanda /openchatgpt a fost înregistrată!");
+    console.log("✅ Comanda /narcischatgpt a fost înregistrată pe server!");
   } catch (error) {
-    console.error(error);
+    console.error("❌ Eroare la înregistrarea comenzii:", error);
   }
 })();
 
@@ -96,7 +96,7 @@ client.once("ready", () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "openchatgpt") {
+  if (interaction.commandName === "narcischatgpt") {
     const question = interaction.options.getString("intrebare");
     const answer = await askOpenAI(question);
     await interaction.reply(answer);
