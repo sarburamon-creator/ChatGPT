@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const MAX_TEXT = 3000; // limita textului trimis la OpenAI
+const MAX_TEXT = 3000;
 
 // --- Client Discord ---
 const client = new Client({
@@ -19,9 +19,11 @@ const client = new Client({
 });
 
 // --- OpenAI ---
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-// --- Slash Command /openaichat ---
+// --- Slash Command ---
 const commands = [
   { name: "openaichat", description: "Pornește conversația cu AI" }
 ];
@@ -30,7 +32,10 @@ const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 
 async function deployCommands() {
   try {
-    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands }
+    );
     console.log("✔ Comanda /openaichat înregistrată!");
   } catch (err) {
     console.error("❌ Eroare la înregistrarea comenzii:", err);
@@ -59,14 +64,16 @@ client.on("messageCreate", async (msg) => {
     const fileExt = file.name.split(".").pop().toLowerCase();
 
     try {
-      const buffer = await fetch(file.url).then(r => r.arrayBuffer());
+      const arrayBuffer = await fetch(file.url).then(r => r.arrayBuffer());
+      const buffer = Buffer.from(arrayBuffer);
 
       if (fileExt === "pdf") {
-        const data = await pdfParse(Buffer.from(buffer));
-        textFromPDF = data.text.slice(0, MAX_TEXT); // trunchiem dacă e prea lung
+        const data = await pdfParse(buffer);
+        textFromPDF = data.text.slice(0, MAX_TEXT);
+
       } else if (["png", "jpg", "jpeg"].includes(fileExt)) {
-        const { data: { text } } = await Tesseract.recognize(Buffer.from(buffer), "eng");
-        textFromImage = text.slice(0, MAX_TEXT); // trunchiem dacă e prea lung
+        const result = await Tesseract.recognize(buffer, "eng");
+        textFromImage = result.data.text.slice(0, MAX_TEXT);
       }
 
     } catch (err) {
@@ -76,8 +83,8 @@ client.on("messageCreate", async (msg) => {
     }
   }
 
-  // --- Combinăm textul din mesaj + imagine + PDF ---
-  let combinedText = msg.content;
+  // --- Text combinat ---
+  let combinedText = msg.content || "";
   if (textFromImage) combinedText += `\n\nText extras din imagine:\n${textFromImage}`;
   if (textFromPDF) combinedText += `\n\nText extras din PDF:\n${textFromPDF}`;
 
@@ -86,17 +93,27 @@ client.on("messageCreate", async (msg) => {
     return;
   }
 
-  // --- Trimite la OpenAI ---
+  // --- Trimitem la OpenAI ---
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "Ești un asistent inteligent pe Discord. Analizează orice text primit și răspunde clar și corect." },
-        { role: "user", content: combinedText }
+        {
+          role: "system",
+          content: "Ești un asistent inteligent pe Discord. Analizează orice text primit și răspunde clar și corect."
+        },
+        {
+          role: "user",
+          content: combinedText
+        }
       ]
     });
 
-    await msg.reply(response.choices[0].message.content);
+    const replyText =
+      response?.choices?.[0]?.message?.content ||
+      "❌ Nu am primit un răspuns valid de la OpenAI.";
+
+    await msg.reply(replyText);
 
   } catch (e) {
     console.error("❌ Eroare OpenAI:", e);
