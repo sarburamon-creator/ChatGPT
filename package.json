@@ -1,7 +1,7 @@
 {
   "name": "regulament-bot",
   "version": "1.0.0",
-  "description": "Bot Discord care analizeaza PDF si imagini",
+  "description": "Bot Discord cu slash command /openchatgpt",
   "main": "index.js",
   "type": "module",
   "scripts": {
