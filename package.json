@@ -1,20 +1,17 @@
 {
-  "name": "discord-ai-bot",
+  "name": "regulament-bot",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Bot Discord care analizeaza PDF si imagini",
   "main": "index.js",
-  "license": "MIT",
-
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
-
   "dependencies": {
-    "discord.js": "^14.15.0",
-    "openai": "^4.76.0",
-    "node-fetch": "^3.3.2",
+    "discord.js": "^14.15.3",
     "pdf-parse": "^1.1.1",
     "tesseract.js": "^5.0.3",
-    "dotenv": "^16.4.7"
+    "axios": "^1.7.7",
+    "fs-extra": "^11.2.0"
   }
 }
